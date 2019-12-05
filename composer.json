@@ -16,6 +16,7 @@
     "myclabs/php-enum": "^1.5"
   },
   "autoload": {
+    "files": ["src/pq.php"],
     "psr-4": { "JTL\\phpQuery\\": "src" }
   }
 }

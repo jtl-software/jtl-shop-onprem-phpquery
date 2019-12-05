@@ -1610,27 +1610,4 @@ abstract class phpQuery
     }
 }
 
-/**
- * Shortcut to phpQuery::pq($arg1, $context)
- * Chainable.
- *
- * @see phpQuery::pq()
- * @param $arg1
- * @param $context
- * @return phpQueryObject
- * @author Tobiasz Cudnik <tobiasz.cudnik/gmail.com>
- * @package phpQuery
- */
-function pq($arg1, $context = null)
-{
-    return \call_user_func_array(['phpQuery', 'pq'], \func_get_args());
-}
-
-// add plugins dir and Zend framework to include path
-\set_include_path(
-    \get_include_path()
-    . PATH_SEPARATOR . __DIR__ . '/phpQuery/'
-    . PATH_SEPARATOR . __DIR__ . '/phpQuery/plugins/'
-);
-
 phpQuery::$plugins = new phpQueryPlugins();
