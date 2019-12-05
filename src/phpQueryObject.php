@@ -188,7 +188,6 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      */
     protected function isRoot($node)
     {
-        //      return $node instanceof DOMDOCUMENT || $node->tagName == 'html';
         return $node instanceof DOMDocument
             || ($node instanceof DOMElement && $node->tagName === 'html')
             || $this->root->isSameNode($node);
@@ -2433,7 +2432,6 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
                             ? $loop
                             : $this->documentWrapper->import($loop);
                     }
-                    // DOMNODE
                 } elseif ($target instanceof DOMNode) {
                     // import node if needed
                     if ($to) {

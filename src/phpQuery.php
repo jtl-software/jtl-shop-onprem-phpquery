@@ -14,8 +14,6 @@
 
 namespace JTL\phpQuery;
 
-// class names for instanceof
-// TODO move them as class constants into phpQuery
 use DOMDocument;
 use DOMNode;
 use DOMNodeList;
@@ -26,11 +24,6 @@ use Zend_Http_Client_Exception;
 use Zend_Json_Decoder;
 use Zend_Json_Encoder;
 use Zend_Json_Exception;
-
-\define('DOMDOCUMENT', 'DOMDocument');
-\define('DOMELEMENT', 'DOMElement');
-\define('DOMNODELIST', 'DOMNodeList');
-\define('DOMNODE', 'DOMNode');
 
 /**
  * Class phpQuery
