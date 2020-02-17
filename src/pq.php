@@ -5,11 +5,10 @@ use JTL\phpQuery\phpQuery;
 
 /**
  * Shortcut to phpQuery::pq($arg1, $context)
- * Chainable.
  *
  * @see phpQuery::pq()
- * @param $arg1
- * @param $context
+ * @param mixed $arg1
+ * @param mixed $context
  * @return phpQueryObject
  * @author Tobiasz Cudnik <tobiasz.cudnik/gmail.com>
  * @package phpQuery

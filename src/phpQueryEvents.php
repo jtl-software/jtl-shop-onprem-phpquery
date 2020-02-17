@@ -2,6 +2,7 @@
 
 namespace JTL\phpQuery;
 
+use DOMElement;
 use DOMNode;
 use Exception;
 
@@ -9,8 +10,7 @@ use Exception;
  * Event handling class.
  *
  * @author Tobiasz Cudnik
- * @package phpQuery
- * @static
+ * @package JTL\phpQuery
  */
 abstract class phpQueryEvents
 {
@@ -19,15 +19,14 @@ abstract class phpQueryEvents
      *
      * @param DOMNode|phpQueryObject|string $document
      * @param string                        $type
-     * @param mixed                         $data
+     * @param array|mixed                         $data
      * @param mixed                         $node
-     *
      * @throws Exception
      * @TODO exclusive events (with !)
      * @TODO global events (test)
      * @TODO support more than event in $type (space-separated)
      */
-    public static function trigger($document, $type, $data = [], $node = null)
+    public static function trigger($document, $type, $data = [], $node = null): void
     {
         // trigger: function(type, data, elem, donative, extra) {
         $documentID = phpQuery::getDocumentID($document);
@@ -68,10 +67,10 @@ abstract class phpQueryEvents
                         } else {
                             $eventName = $eventType;
                         }
-                        if ($name != $eventName) {
+                        if ($name !== $eventName) {
                             continue;
                         }
-                        if ($namespace && $eventNamespace && $namespace != $eventNamespace) {
+                        if ($namespace && $eventNamespace && $namespace !== $eventNamespace) {
                             continue;
                         }
                         foreach ($handlers as $handler) {
@@ -108,7 +107,7 @@ abstract class phpQueryEvents
      * @TODO support more than event in $type (space-separated)
      * @TODO support binding to global events
      */
-    public static function add($document, $node, $type, $data, $callback = null)
+    public static function add($document, $node, $type, $data, $callback = null): void
     {
         $documentID = phpQuery::getDocumentID($document);
         $eventNode  = self::getNode($documentID, $node);
@@ -125,8 +124,6 @@ abstract class phpQueryEvents
     }
 
     /**
-     * Enter description here...
-     *
      * @param DOMNode|phpQueryObject|string $document
      * @param                               $node
      * @param                               $type
@@ -135,7 +132,7 @@ abstract class phpQueryEvents
      * @TODO namespace events
      * @TODO support more than event in $type (space-separated)
      */
-    public static function remove($document, $node, $type = null, $callback = null)
+    public static function remove($document, $node, $type = null, $callback = null): void
     {
         $documentID = phpQuery::getDocumentID($document);
         $eventNode  = self::getNode($documentID, $node);
@@ -153,8 +150,8 @@ abstract class phpQueryEvents
     }
 
     /**
-     * @param $documentID
-     * @param $node
+     * @param string $documentID
+     * @param DOMElement $node
      * @return mixed
      */
     protected static function getNode($documentID, $node)
@@ -164,11 +161,13 @@ abstract class phpQueryEvents
                 return $eventNode;
             }
         }
+
+        return null;
     }
 
     /**
-     * @param $documentID
-     * @param $node
+     * @param string $documentID
+     * @param DOMElement $node
      * @return mixed
      */
     protected static function setNode($documentID, $node)
@@ -179,11 +178,11 @@ abstract class phpQueryEvents
     }
 
     /**
-     * @param $documentID
-     * @param $type
+     * @param string $documentID
+     * @param string $type
      * @return bool
      */
-    protected static function issetGlobal($documentID, $type)
+    protected static function issetGlobal($documentID, $type): bool
     {
         return isset(phpQuery::$documents[$documentID])
             ? \in_array($type, phpQuery::$documents[$documentID]->eventsGlobal)
