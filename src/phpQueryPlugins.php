@@ -16,7 +16,7 @@ class phpQueryPlugins
     /**
      * @param $method
      * @param $args
-     * @return mixed|phpQueryPlugins
+     * @return mixed|phpQueryPlugins|void
      * @throws Exception
      */
     public function __call($method, $args)

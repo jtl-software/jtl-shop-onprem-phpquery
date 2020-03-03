@@ -15,15 +15,11 @@
 namespace JTL\phpQuery;
 
 use DOMDocument;
+use DOMElement;
 use DOMNode;
 use DOMNodeList;
 use Exception;
 use Iterator;
-use Zend_Http_Client;
-use Zend_Http_Client_Exception;
-use Zend_Json_Decoder;
-use Zend_Json_Encoder;
-use Zend_Json_Exception;
 
 /**
  * Class phpQuery
@@ -33,13 +29,6 @@ use Zend_Json_Exception;
  */
 abstract class phpQuery
 {
-    /**
-     * XXX: Workaround for mbstring problems
-     *
-     * @var bool
-     */
-    public static $mbstringSupport = true;
-
     /**
      * @var bool
      */
@@ -68,15 +57,11 @@ abstract class phpQuery
     public static $defaultCharset = 'UTF-8';
 
     /**
-     * Static namespace for plugins.
-     *
-     * @var object
+     * @var array
      */
     public static $plugins = [];
 
     /**
-     * List of loaded plugins.
-     *
      * @var array
      */
     public static $pluginsLoaded = [];
@@ -97,47 +82,12 @@ abstract class phpQuery
     public static $extendMethods = [];
 
     /**
-     * @TODO implement
      * @var array
      */
     public static $extendStaticMethods = [];
 
     /**
-     * Hosts allowed for AJAX connections.
-     * Dot '.' means $_SERVER['HTTP_HOST'] (if any).
-     *
-     * @var array
-     */
-    public static $ajaxAllowedHosts = ['.'];
-
-    /**
-     * AJAX settings.
-     *
-     * @var array
-     * XXX should it be static or not ?
-     */
-    public static $ajaxSettings = [
-        'url'         => '',//TODO
-        'global'      => true,
-        'type'        => 'GET',
-        'timeout'     => null,
-        'contentType' => 'application/x-www-form-urlencoded',
-        'processData' => true,
-        'data'        => null,
-        'username'    => null,
-        'password'    => null,
-        'accepts'     => [
-            'xml'      => 'application/xml, text/xml',
-            'html'     => 'text/html',
-            'script'   => 'text/javascript, application/javascript',
-            'json'     => 'application/json, text/javascript',
-            'text'     => 'text/plain',
-            '_default' => '*/*'
-        ]
-    ];
-
-    /**
-     * @var null
+     * @var string|null
      */
     public static $lastModified;
 
@@ -179,14 +129,15 @@ abstract class phpQuery
      *   pq('div.myClass', $pq)
      *
      * @param string|DOMNode|DOMNodeList|array $arg1 HTML markup, CSS Selector, DOMNode or array of DOMNodes
-     * @param string|phpQueryObject|DOMNode    $context DOM ID from $pq->getDocumentID(), phpQuery object (determines also query root) or DOMNode (determines also query root)
-     * @throws Exception
+     * @param string|phpQueryObject|DOMNode    $context DOM ID from $pq->getDocumentID(), phpQuery object (determines
+     *     also query root) or DOMNode (determines also query root)
      * @return phpQueryObject|false
      * phpQuery object or false in case of error.
+     * @throws Exception
      */
     public static function pq($arg1, $context = null)
     {
-        if ($arg1 instanceof DOMNode && !isset($context)) {
+        if ($context === null && $arg1 instanceof DOMNode) {
             foreach (self::$documents as $documentWrapper) {
                 $compare = $arg1 instanceof DOMDocument
                     ? $arg1 : $arg1->ownerDocument;
@@ -198,16 +149,17 @@ abstract class phpQuery
         if (!$context) {
             $domId = self::$defaultDocumentID;
             if (!$domId) {
-                throw new Exception("Can't use last created DOM, because there isn't any. Use phpQuery::newDocument() first.");
+                throw new Exception("Can't use last created DOM, because there isn't any.
+                 Use phpQuery::newDocument() first.");
             }
-        } else if (\is_object($context) && $context instanceof phpQueryObject) {
+        } elseif (\is_object($context) && $context instanceof phpQueryObject) {
             $domId = $context->getDocumentID();
-        } else if ($context instanceof DOMDocument) {
+        } elseif ($context instanceof DOMDocument) {
             $domId = self::getDocumentID($context);
             if (!$domId) {
                 $domId = self::newDocument($context)->getDocumentID();
             }
-        } else if ($context instanceof DOMNode) {
+        } elseif ($context instanceof DOMNode) {
             $domId = self::getDocumentID($context);
             if (!$domId) {
                 throw new Exception('Orphaned DOMNode');
@@ -220,12 +172,12 @@ abstract class phpQuery
              * Return $arg1 or import $arg1 stack if document differs:
              * pq(pq('<div/>'))
              */
-            if ($arg1->getDocumentID() == $domId) {
+            if ($arg1->getDocumentID() === $domId) {
                 return $arg1;
             }
             $class = \get_class($arg1);
             // support inheritance by passing old object to overloaded constructor
-            $phpQuery           = $class !== 'phpQuery'
+            $phpQuery           = $class !== __CLASS__
                 ? new $class($arg1, $domId)
                 : new phpQueryObject($domId);
             $phpQuery->elements = [];
@@ -258,9 +210,7 @@ abstract class phpQuery
              */
             $phpQuery = new phpQueryObject($domId);
 
-            return $phpQuery->newInstance(
-                $phpQuery->documentWrapper->import($arg1)
-            );
+            return $phpQuery->newInstance($phpQuery->documentWrapper->import($arg1));
         }
         /**
          * Run CSS query:
@@ -269,7 +219,7 @@ abstract class phpQuery
         $phpQuery = new phpQueryObject($domId);
         if ($context && $context instanceof phpQueryObject) {
             $phpQuery->elements = $context->elements;
-        } else if ($context && $context instanceof DOMNodeList) {
+        } elseif ($context && $context instanceof DOMNodeList) {
             $phpQuery->elements = [];
             foreach ($context as $node) {
                 $phpQuery->elements[] = $node;
@@ -286,9 +236,9 @@ abstract class phpQuery
      * to using this method.
      * $id can be retrived via getDocumentID() or getDocumentIDRef().
      *
-     * @param $id
+     * @param string $id
      */
-    public static function selectDocument($id)
+    public static function selectDocument($id): void
     {
         $id                      = self::getDocumentID($id);
         self::$defaultDocumentID = self::getDocumentID($id);
@@ -297,14 +247,13 @@ abstract class phpQuery
     /**
      * Returns document with id $id or last used as phpQueryObject.
      * $id can be retrived via getDocumentID() or getDocumentIDRef().
-     * Chainable.
      *
-     * @param $id
+     * @param string $id
      * @return phpQueryObject
      * @throws Exception
      * @see phpQuery::selectDocument()
      */
-    public static function getDocument($id = null)
+    public static function getDocument($id = null): phpQueryObject
     {
         if ($id) {
             self::selectDocument($id);
@@ -317,14 +266,13 @@ abstract class phpQuery
 
     /**
      * Creates new document from markup.
-     * Chainable.
      *
      * @param string|null $markup
      * @param string|null $contentType
      * @return phpQueryObject
      * @throws Exception
      */
-    public static function newDocument($markup = null, $contentType = null)
+    public static function newDocument($markup = null, $contentType = null): phpQueryObject
     {
         if (!$markup) {
             $markup = '';
@@ -336,13 +284,12 @@ abstract class phpQuery
 
     /**
      * Creates new document from markup.
-     * Chainable.
      *
      * @param string|null $markup
      * @param string|null $charset
      * @return phpQueryObject
      */
-    public static function newDocumentHTML($markup = null, $charset = null)
+    public static function newDocumentHTML($markup = null, $charset = null): phpQueryObject
     {
         $contentType = $charset
             ? ";charset=$charset"
@@ -353,13 +300,12 @@ abstract class phpQuery
 
     /**
      * Creates new document from markup.
-     * Chainable.
      *
      * @param string|null $markup
      * @param string|null $charset
      * @return phpQueryObject
      */
-    public static function newDocumentXML($markup = null, $charset = null)
+    public static function newDocumentXML($markup = null, $charset = null): phpQueryObject
     {
         $contentType = $charset
             ? ";charset=$charset"
@@ -370,13 +316,12 @@ abstract class phpQuery
 
     /**
      * Creates new document from markup.
-     * Chainable.
      *
      * @param string|null $markup
      * @param string|null $charset
      * @return phpQueryObject
      */
-    public static function newDocumentXHTML($markup = null, $charset = null)
+    public static function newDocumentXHTML($markup = null, $charset = null): phpQueryObject
     {
         $contentType = $charset
             ? ";charset=$charset"
@@ -387,24 +332,23 @@ abstract class phpQuery
 
     /**
      * Creates new document from markup.
-     * Chainable.
      *
      * @param string|null $markup
      * @param string      $contentType
      * @return phpQueryObject
      */
-    public static function newDocumentPHP($markup = null, $contentType = 'text/html')
+    public static function newDocumentPHP($markup = null, $contentType = 'text/html'): phpQueryObject
     {
         // TODO pass charset to phpToMarkup if possible (use DOMDocumentWrapper function)
         return self::newDocument(self::phpToMarkup($markup, self::$defaultCharset), $contentType);
     }
 
     /**
-     * @param        $php
+     * @param string $php
      * @param string $charset
-     * @return mixed
+     * @return string
      */
-    public static function phpToMarkup($php, $charset = 'utf-8')
+    public static function phpToMarkup($php, $charset = 'utf-8'): string
     {
         $regexes = [
             '@(<(?!\\?)(?:[^>]|\\?>)+\\w+\\s*=\\s*)(\')([^\']*)<' . '?php?(.*?)(?:\\?>)([^\']*)\'@s',
@@ -424,11 +368,11 @@ abstract class phpQuery
     }
 
     /**
-     * @param        $m
+     * @param string $m
      * @param string $charset
      * @return string
      */
-    public static function _phpToMarkupCallback($m, $charset = 'utf-8')
+    public static function _phpToMarkupCallback($m, $charset = 'utf-8'): string
     {
         return $m[1] . $m[2]
             . \htmlspecialchars('<?php' . $m[4] . '?>', ENT_QUOTES | ENT_NOQUOTES, $charset)
@@ -436,10 +380,10 @@ abstract class phpQuery
     }
 
     /**
-     * @param $m
+     * @param string $m
      * @return string
      */
-    public static function _markupToPHPCallback($m)
+    public static function _markupToPHPCallback($m): string
     {
         return '<?php ' . \htmlspecialchars_decode($m[1]) . ' ?>';
     }
@@ -451,7 +395,7 @@ abstract class phpQuery
      * @param string|phpQueryObject $content
      * @return string PHP code.
      */
-    public static function markupToPHP($content)
+    public static function markupToPHP($content): string
     {
         if ($content instanceof phpQueryObject) {
             $content = $content->markupOuter();
@@ -489,27 +433,25 @@ abstract class phpQuery
 
     /**
      * Creates new document from file $file.
-     * Chainable.
      *
-     * @param string $file URLs allowed. See File wrapper page at php.net for more supported sources.
-     * @param        $contentType
+     * @param string      $file URLs allowed. See File wrapper page at php.net for more supported sources.
+     * @param string|null $contentType
      * @return phpQueryObject
      * @throws Exception
      */
-    public static function newDocumentFile($file, $contentType = null)
+    public static function newDocumentFile($file, $contentType = null): phpQueryObject
     {
         return new phpQueryObject(self::createDocumentWrapper(\file_get_contents($file), $contentType));
     }
 
     /**
      * Creates new document from markup.
-     * Chainable.
      *
-     * @param      $file
-     * @param null $charset
+     * @param string      $file
+     * @param string|null $charset
      * @return phpQueryObject
      */
-    public static function newDocumentFileHTML($file, $charset = null)
+    public static function newDocumentFileHTML($file, $charset = null): phpQueryObject
     {
         $contentType = $charset
             ? ";charset=$charset"
@@ -525,7 +467,7 @@ abstract class phpQuery
      * @param string|null $charset
      * @return phpQueryObject
      */
-    public static function newDocumentFileXML($file, $charset = null)
+    public static function newDocumentFileXML($file, $charset = null): phpQueryObject
     {
         $contentType = $charset
             ? ";charset=$charset"
@@ -536,13 +478,12 @@ abstract class phpQuery
 
     /**
      * Creates new document from markup.
-     * Chainable.
      *
      * @param string      $file
      * @param string|null $charset
      * @return phpQueryObject
      */
-    public static function newDocumentFileXHTML($file, $charset = null)
+    public static function newDocumentFileXHTML($file, $charset = null): phpQueryObject
     {
         $contentType = $charset
             ? ";charset=$charset"
@@ -554,8 +495,8 @@ abstract class phpQuery
     /**
      * Creates new document from markup.
      *
-     * @param string $file
-     * @param null   $contentType
+     * @param string      $file
+     * @param string|null $contentType
      * @return phpQueryObject
      */
     public static function newDocumentFilePHP($file, $contentType = null)
@@ -564,33 +505,20 @@ abstract class phpQuery
     }
 
     /**
-     * Reuses existing DOMDocument object.
-     *
-     * @param $document DOMDocument
-     * @return void
-     * @TODO support DOMDocument
-     */
-    public static function loadDocument($document)
-    {
-        // TODO
-        die('TODO loadDocument');
-    }
-
-    /**
-     * @param      $html
-     * @param null $contentType
-     * @param null $documentID
+     * @param string      $html
+     * @param string|null $contentType
+     * @param string|null $documentID
      * @return null|string
      * @throws Exception
      *
      * @todo support PHP tags in input
      * @todo support passing DOMDocument object from self::loadDocument
      */
-    protected static function createDocumentWrapper($html, $contentType = null, $documentID = null)
-    {
-        if (\function_exists('domxml_open_mem')) {
-            throw new Exception("Old PHP4 DOM XML extension detected. phpQuery won't work until this extension is enabled.");
-        }
+    protected static function createDocumentWrapper(
+        string $html,
+        string $contentType = null,
+        $documentID = null
+    ): ?string {
         $document = null;
         if (($html instanceof DOMDocument) && self::getDocumentID($html)) {
             // document already exists in phpQuery::$documents, make a copy
@@ -610,12 +538,12 @@ abstract class phpQuery
      * Extend class namespace.
      *
      * @param string|array $target
-     * @param array        $source
+     * @param string|array $source
      * @return bool
      * @throws Exception
      * @TODO support string $source
      */
-    public static function extend($target, $source)
+    public static function extend($target, $source): bool
     {
         switch ($target) {
             case 'phpQueryObject':
@@ -648,12 +576,12 @@ abstract class phpQuery
     /**
      * Extend phpQuery with $class from $file.
      *
-     * @param      $class - Extending class name. Real class name can be prepended phpQuery_.
-     * @param null $file - Filename to include. Defaults to "{$class}.php".
+     * @param string $class - Extending class name. Real class name can be prepended phpQuery_.
+     * @param string $file - Filename to include. Defaults to "{$class}.php".
      * @return bool
      * @throws Exception
      */
-    public static function plugin($class, $file = null)
+    public static function plugin($class, $file = null): bool
     {
         if (\in_array($class, self::$pluginsLoaded, true)) {
             return true;
@@ -721,7 +649,7 @@ abstract class phpQuery
      *
      * @param mixed $id @see phpQuery::getDocumentID() for supported types.
      */
-    public static function unloadDocuments($id = null)
+    public static function unloadDocuments($id = null): void
     {
         if (isset($id)) {
             if ($id = self::getDocumentID($id)) {
@@ -738,25 +666,25 @@ abstract class phpQuery
      * Parses phpQuery object or HTML result against PHP tags and makes them active.
      *
      * @param phpQuery|string $content
-     * @deprecated
      * @return string
+     * @deprecated
      */
-    public static function unsafePHPTags($content)
+    public static function unsafePHPTags($content): string
     {
         return self::markupToPHP($content);
     }
 
     /**
-     * @param $DOMNodeList
+     * @param DOMNodeList $list
      * @return array
      */
-    public static function DOMNodeListToArray($DOMNodeList)
+    public static function DOMNodeListToArray($list): array
     {
         $array = [];
-        if (!$DOMNodeList) {
+        if (!$list) {
             return $array;
         }
-        foreach ($DOMNodeList as $node) {
+        foreach ($list as $node) {
             $array[] = $node;
         }
 
@@ -766,19 +694,18 @@ abstract class phpQuery
     /**
      * Checks if $input is HTML string, which has to start with '<'.
      *
-     * @deprecated
-     * @param String $input
-     * @return Bool
+     * @param array|string $input
+     * @return bool
      */
-    public static function isMarkup($input)
+    public static function isMarkup($input): bool
     {
         return !\is_array($input) && \strpos(\trim($input), '<') === 0;
     }
 
     /**
-     * @param $text
+     * @param mixed $text
      */
-    public static function debug($text)
+    public static function debug($text): void
     {
         if (self::$debug) {
             \var_dump($text);
@@ -786,393 +713,43 @@ abstract class phpQuery
     }
 
     /**
-     * Make an AJAX request
-     *
-     * @param array            $options
-     * @param Zend_Http_Client $xhr
-     * @return null|Zend_Http_Client
-     * @throws Exception
-     * @throws Zend_Http_Client_Exception
-     * @link http://docs.jquery.com/Ajax/jQuery.ajax
-     *
-     *  Additional options are:
-     * 'document' - document for global events, @see phpQuery::getDocumentID()
-     * 'referer' - implemented
-     * 'requested_with' - TODO; not implemented (X-Requested-With)
-     *
-     * @TODO $options['cache']
-     * @TODO $options['processData']
-     * @TODO $options['xhr']
-     * @TODO $options['data'] as string
-     * @TODO XHR interface
-     */
-    public static function ajax($options = [], $xhr = null)
-    {
-        $options    = \array_merge(self::$ajaxSettings, $options);
-        $documentID = isset($options['document'])
-            ? self::getDocumentID($options['document'])
-            : null;
-        if ($xhr) {
-            // reuse existing XHR object, but clean it up
-            $client = $xhr;
-            $client->setAuth(false);
-            $client->setHeaders('If-Modified-Since', null);
-            $client->setHeaders('Referer', null);
-            $client->resetParameters();
-        } else {
-            // create new XHR object
-            require_once 'Zend/Http/Client.php';
-            $client = new Zend_Http_Client();
-            $client->setCookieJar();
-        }
-        if (isset($options['timeout'])) {
-            $client->setConfig(['timeout' => $options['timeout']]);
-        }
-        foreach (self::$ajaxAllowedHosts as $k => $host) {
-            if ($host === '.' && isset($_SERVER['HTTP_HOST'])) {
-                self::$ajaxAllowedHosts[$k] = $_SERVER['HTTP_HOST'];
-            }
-        }
-        $host = \parse_url($options['url'], PHP_URL_HOST);
-        if (!\in_array($host, self::$ajaxAllowedHosts, true)) {
-            throw new Exception("Request not permitted, host '$host' not present in "
-                . 'phpQuery::$ajaxAllowedHosts');
-        }
-        // JSONP
-        $jsre = '/=\\?(&|$)/';
-        if (isset($options['dataType']) && $options['dataType'] === 'jsonp') {
-            $jsonpCallbackParam = $options['jsonp'] ?: 'callback';
-            if (\strtolower($options['type']) === 'get') {
-                if (!\preg_match($jsre, $options['url'])) {
-                    $sep             = \strpos($options['url'], '?')
-                        ? '&' : '?';
-                    $options['url'] .= "$sep$jsonpCallbackParam=?";
-                }
-            } else if ($options['data']) {
-                $jsonp = false;
-                foreach ($options['data'] as $n => $v) {
-                    if ($v === '?') {
-                        $jsonp = true;
-                    }
-                }
-                if (!$jsonp) {
-                    $options['data'][$jsonpCallbackParam] = '?';
-                }
-            }
-            $options['dataType'] = 'json';
-        }
-        if (isset($options['dataType']) && $options['dataType'] === 'json') {
-            $jsonpCallback = 'json_' . \md5(\microtime());
-            $jsonpData     = $jsonpUrl = false;
-            if ($options['data']) {
-                foreach ($options['data'] as $n => $v) {
-                    if ($v === '?') {
-                        $jsonpData = $n;
-                    }
-                }
-            }
-            if (\preg_match($jsre, $options['url'])) {
-                $jsonpUrl = true;
-            }
-            if ($jsonpData !== false || $jsonpUrl) {
-                // remember callback name for httpData()
-                $options['_jsonp'] = $jsonpCallback;
-                if ($jsonpData !== false) {
-                    $options['data'][$jsonpData] = $jsonpCallback;
-                }
-                if ($jsonpUrl) {
-                    $options['url'] = \preg_replace($jsre, "=$jsonpCallback\\1", $options['url']);
-                }
-            }
-        }
-        $client->setUri($options['url']);
-        $client->setMethod(\strtoupper($options['type']));
-        if (isset($options['referer']) && $options['referer']) {
-            $client->setHeaders('Referer', $options['referer']);
-        }
-        $client->setHeaders([
-            'User-Agent'      => 'Mozilla/5.0 (X11; U; Linux x86; en-US; rv:1.9.0.5) Gecko/2008122010 Firefox/3.0.5',
-            'Accept-Charset'  => JTL_CHARSET . ',utf-8;q=0.7,*;q=0.7',
-            'Accept-Language' => 'en-us,en;q=0.5'
-        ]);
-        if ($options['username']) {
-            $client->setAuth($options['username'], $options['password']);
-        }
-        if (isset($options['ifModified']) && $options['ifModified']) {
-            $client->setHeaders(
-                'If-Modified-Since',
-                self::$lastModified ?: 'Thu, 01 Jan 1970 00:00:00 GMT'
-            );
-        }
-        $client->setHeaders(
-            'Accept',
-            isset($options['dataType'], self::$ajaxSettings['accepts'][$options['dataType']])
-                ? self::$ajaxSettings['accepts'][$options['dataType']] . ', */*'
-                : self::$ajaxSettings['accepts']['_default']
-        );
-        // TODO $options['processData']
-        if ($options['data'] instanceof phpQueryObject) {
-            $serialized      = $options['data']->serializeArray($options['data']);
-            $options['data'] = [];
-            foreach ($serialized as $r) {
-                $options['data'][$r['name']] = $r['value'];
-            }
-        }
-        if (\strtolower($options['type']) === 'get') {
-            $client->setParameterGet($options['data']);
-        } else if (\strtolower($options['type']) === 'post') {
-            $client->setEncType($options['contentType']);
-            $client->setParameterPost($options['data']);
-        }
-        if (self::$active == 0 && $options['global']) {
-            phpQueryEvents::trigger($documentID, 'ajaxStart');
-        }
-        self::$active++;
-        // beforeSend callback
-        if (isset($options['beforeSend']) && $options['beforeSend']) {
-            self::callbackRun($options['beforeSend'], [$client]);
-        }
-        // ajaxSend event
-        if ($options['global']) {
-            phpQueryEvents::trigger($documentID, 'ajaxSend', [$client, $options]);
-        }
-        if (self::$debug) {
-            self::debug("{$options['type']}: {$options['url']}\n");
-            self::debug('Options: <pre>' . \var_export($options, true) . "</pre>\n");
-        }
-        // request
-        $response = $client->request();
-        if (self::$debug) {
-            self::debug('Status: ' . $response->getStatus() . ' / ' . $response->getMessage());
-            self::debug($client->getLastRequest());
-            self::debug($response->getHeaders());
-        }
-        if ($response->isSuccessful()) {
-            // XXX tempolary
-            self::$lastModified = $response->getHeader('Last-Modified');
-            $data               = self::httpData($response->getBody(), $options['dataType'], $options);
-            if (isset($options['success']) && $options['success']) {
-                self::callbackRun($options['success'], [$data, $response->getStatus(), $options]);
-            }
-            if ($options['global']) {
-                phpQueryEvents::trigger($documentID, 'ajaxSuccess', [$client, $options]);
-            }
-        } else {
-            if (isset($options['error']) && $options['error']) {
-                self::callbackRun($options['error'], [$client, $response->getStatus(), $response->getMessage()]);
-            }
-            if ($options['global']) {
-                phpQueryEvents::trigger(
-                    $documentID,
-                    'ajaxError',
-                    [
-                    $client,
-                    $response->getMessage(),
-                    $options
-                    ]
-                );
-            }
-        }
-        if (isset($options['complete']) && $options['complete']) {
-            self::callbackRun($options['complete'], [$client, $response->getStatus()]);
-        }
-        if ($options['global']) {
-            phpQueryEvents::trigger($documentID, 'ajaxComplete', [$client, $options]);
-        }
-        if ($options['global'] && !--self::$active) {
-            phpQueryEvents::trigger($documentID, 'ajaxStop');
-        }
-
-        return $client;
-    }
-
-    /**
-     * @param $data
-     * @param $type
-     * @param $options
-     * @return mixed
-     */
-    protected static function httpData($data, $type, $options)
-    {
-        if (isset($options['dataFilter']) && $options['dataFilter']) {
-            $data = self::callbackRun($options['dataFilter'], [$data, $type]);
-        }
-        if (\is_string($data) && $type === 'json') {
-            if (isset($options['_jsonp']) && $options['_jsonp']) {
-                $data = \preg_replace('/^\s*\w+\((.*)\)\s*$/s', '$1', $data);
-            }
-            $data = self::parseJSON($data);
-        }
-
-        return $data;
-    }
-
-    /**
      * @param array|phpQuery $data
      * @return string
      */
-    public static function param($data)
+    public static function param($data): string
     {
         return \http_build_query($data, null, '&');
     }
 
     /**
-     * @param      $url
-     * @param null $data
-     * @param null $callback
-     * @param null $type
-     * @return null|Zend_Http_Client
-     * @throws Exception
-     */
-    public static function get($url, $data = null, $callback = null, $type = null)
-    {
-        if (!\is_array($data)) {
-            $callback = $data;
-            $data     = null;
-        }
-
-        return self::ajax([
-            'type'     => 'GET',
-            'url'      => $url,
-            'data'     => $data,
-            'success'  => $callback,
-            'dataType' => $type,
-        ]);
-    }
-
-    /**
-     * @param      $url
-     * @param null $data
-     * @param null $callback
-     * @param null $type
-     * @return Zend_Http_Client
-     * @throws Exception
-     */
-    public static function post($url, $data = null, $callback = null, $type = null)
-    {
-        if (!\is_array($data)) {
-            $callback = $data;
-            $data     = null;
-        }
-
-        return self::ajax([
-            'type'     => 'POST',
-            'url'      => $url,
-            'data'     => $data,
-            'success'  => $callback,
-            'dataType' => $type,
-        ]);
-    }
-
-    /**
-     * @param      $url
-     * @param null $data
-     * @param null $callback
-     * @return Zend_Http_Client
-     * @throws Exception
-     */
-    public static function getJSON($url, $data = null, $callback = null)
-    {
-        if (!\is_array($data)) {
-            $callback = $data;
-            $data     = null;
-        }
-
-        return self::ajax([
-            'type'     => 'GET',
-            'url'      => $url,
-            'data'     => $data,
-            'success'  => $callback,
-            'dataType' => 'json',
-        ]);
-    }
-
-    /**
-     * @param $options
-     */
-    public static function ajaxSetup($options)
-    {
-        self::$ajaxSettings = \array_merge(self::$ajaxSettings, $options);
-    }
-
-    /**
-     * @param      $host1
-     * @param null $host2
-     * @param null $host3
-     */
-    public static function ajaxAllowHost($host1, $host2 = null, $host3 = null)
-    {
-        $loop = \is_array($host1)
-            ? $host1
-            : \func_get_args();
-        foreach ($loop as $host) {
-            if ($host && !\in_array($host, self::$ajaxAllowedHosts, true)) {
-                self::$ajaxAllowedHosts[] = $host;
-            }
-        }
-    }
-
-    /**
-     * @param      $url1
-     * @param null $url2
-     * @param null $url3
-     */
-    public static function ajaxAllowURL($url1, $url2 = null, $url3 = null)
-    {
-        $loop = \is_array($url1)
-            ? $url1
-            : \func_get_args();
-        foreach ($loop as $url) {
-            self::ajaxAllowHost(\parse_url($url, PHP_URL_HOST));
-        }
-    }
-
-    /**
      * Returns JSON representation of $data.
      *
-     * @static
      * @param mixed $data
-     * @return string
+     * @return string|bool
      */
     public static function toJSON($data)
     {
-        if (\function_exists('json_encode')) {
-            return \json_encode($data);
-        }
-        require_once 'Zend/Json/Encoder.php';
-
-        return Zend_Json_Encoder::encode($data);
+        return \json_encode($data);
     }
 
     /**
      * Parses JSON into proper PHP type.
      *
-     * @static
      * @param string $json
      * @return mixed
-     * @throws Zend_Json_Exception
      */
     public static function parseJSON($json)
     {
-        if (\function_exists('json_decode')) {
-            $return = \json_decode(\trim($json), true);
-            // json_decode and UTF8 issues
-            if (isset($return)) {
-                return $return;
-            }
-        }
-        require_once 'Zend/Json/Decoder.php';
-
-        return Zend_Json_Decoder::decode($json);
+        return \json_decode(\trim($json), true);
     }
 
     /**
      * Returns source's document ID.
      *
-     * @param $source DOMNode|phpQueryObject
+     * @param DOMNode|phpQueryObject|string $source
      * @return string
      */
-    public static function getDocumentID($source)
+    public static function getDocumentID($source): string
     {
         if ($source instanceof DOMDocument) {
             foreach (self::$documents as $id => $document) {
@@ -1180,7 +757,7 @@ abstract class phpQuery
                     return $id;
                 }
             }
-        } else if ($source instanceof DOMNode) {
+        } elseif ($source instanceof DOMNode) {
             foreach (self::$documents as $id => $document) {
                 if ($source->ownerDocument->isSameNode($document->document)) {
                     return $id;
@@ -1194,14 +771,16 @@ abstract class phpQuery
                 return $source;
             }
         }
+
+        return '';
     }
 
     /**
      * Get DOMDocument object related to $source.
      * Returns null if such document doesn't exist.
      *
-     * @param $source DOMNode|phpQueryObject|string
-     * @return string
+     * @param DOMNode|phpQueryObject|string $source
+     * @return string|DOMDocument|null
      */
     public static function getDOMDocument($source)
     {
@@ -1216,11 +795,11 @@ abstract class phpQuery
     }
 
     /**
-     * @param $object
+     * @param object $object
      * @return array
      * @link http://docs.jquery.com/Utilities/jQuery.makeArray
      */
-    public static function makeArray($object)
+    public static function makeArray($object): array
     {
         $array = [];
         if (\is_object($object) && $object instanceof DOMNodeList) {
@@ -1241,14 +820,14 @@ abstract class phpQuery
     }
 
     /**
-     * @param      $object
-     * @param      $callback
-     * @param null $param1
-     * @param null $param2
-     * @param null $param3
+     * @param object   $object
+     * @param callable $callback
+     * @param null     $param1
+     * @param null     $param2
+     * @param null     $param3
      * @link http://docs.jquery.com/Utilities/jQuery.each
      */
-    public static function each($object, $callback, $param1 = null, $param2 = null, $param3 = null)
+    public static function each($object, $callback, $param1 = null, $param2 = null, $param3 = null): void
     {
         $paramStructure = null;
         if (\func_num_args() > 2) {
@@ -1267,15 +846,15 @@ abstract class phpQuery
     }
 
     /**
-     * @param      $array
-     * @param      $callback
-     * @param null $param1
-     * @param null $param2
-     * @param null $param3
+     * @param array    $array
+     * @param callable $callback
+     * @param null     $param1
+     * @param null     $param2
+     * @param null     $param3
      * @return array
      * @link http://docs.jquery.com/Utilities/jQuery.map
      */
-    public static function map($array, $callback, $param1 = null, $param2 = null, $param3 = null)
+    public static function map($array, $callback, $param1 = null, $param2 = null, $param3 = null): array
     {
         $result         = [];
         $paramStructure = null;
@@ -1289,7 +868,7 @@ abstract class phpQuery
                 foreach ($vv as $vvv) {
                     $result[] = $vvv;
                 }
-            } else if ($vv !== null) {
+            } elseif ($vv !== null) {
                 $result[] = $vv;
             }
         }
@@ -1298,27 +877,15 @@ abstract class phpQuery
     }
 
     /**
-     * @param CallbackParameterToReference|Callback $callback
-     * @param                                       $params
-     * @param                                       $paramStructure
-     * @return bool|mixed
+     * @param callable|null $callback
+     * @param array                                      $params
+     * @param array|null                                 $paramStructure
+     * @return bool|mixed|void
      */
     public static function callbackRun($callback, $params = [], $paramStructure = null)
     {
         if (!$callback) {
             return;
-        }
-        if ($callback instanceof CallbackParameterToReference) {
-            // TODO support ParamStructure to select which $param push to reference
-            if (isset($params[0])) {
-                $callback->callback = $params[0];
-            }
-
-            return true;
-        }
-        if ($callback instanceof Callback) {
-            $paramStructure = $callback->params;
-            $callback       = $callback->callback;
         }
         if (!$paramStructure) {
             return \call_user_func_array($callback, $params);
@@ -1339,10 +906,8 @@ abstract class phpQuery
      * @param phpQueryObject $one
      * @param phpQueryObject $two
      * @return array
-     * @protected
-     * @todo node lists, phpQueryObject
      */
-    public static function merge($one, $two)
+    public static function merge($one, $two): array
     {
         $elements = $one->elements;
         foreach ($two->elements as $node) {
@@ -1361,18 +926,18 @@ abstract class phpQuery
     }
 
     /**
-     * @param $array
-     * @param $callback
-     * @param $invert
+     * @param array    $array
+     * @param callable $callback
+     * @param bool     $invert
      * @return array
      * @link http://docs.jquery.com/Utilities/jQuery.grep
      */
-    public static function grep($array, $callback, $invert = false)
+    public static function grep($array, $callback, bool $invert = false): array
     {
         $result = [];
         foreach ($array as $k => $v) {
-            $r = \call_user_func_array($callback, [$v, $k]);
-            if ($r === !(bool)$invert) {
+            $r = $callback($v, $k);
+            if ($r === !$invert) {
                 $result[] = $v;
             }
         }
@@ -1381,118 +946,27 @@ abstract class phpQuery
     }
 
     /**
-     * @param $array
-     * @return array
-     */
-    public static function unique($array)
-    {
-        return \array_unique($array);
-    }
-
-    /**
-     *
-     * @param $function
-     * @return bool
-     * @TODO there are problems with non-static methods, second parameter pass it
-     *    but doesnt verify is method is really callable
-     */
-    public static function isFunction($function)
-    {
-        return \is_callable($function);
-    }
-
-    /**
-     * @param $str
+     * @param string $code
      * @return string
      */
-    public static function trim($str)
-    {
-        return \trim($str);
-    }
-
-    /**
-     *
-     * @param $url
-     * @param $callback
-     * @param $param1
-     * @param $param2
-     * @param $param3
-     * @return phpQueryObject
-     * @throws Exception
-     */
-    public static function browserGet($url, $callback, $param1 = null, $param2 = null, $param3 = null)
-    {
-        if (self::plugin('WebBrowser')) {
-            $params = \func_get_args();
-
-            return self::callbackRun([self::$plugins, 'browserGet'], $params);
-        }
-        self::debug('WebBrowser plugin not available...');
-    }
-
-    /**
-     *
-     * @param $url
-     * @param $data
-     * @param $callback
-     * @param $param1
-     * @param $param2
-     * @param $param3
-     * @return phpQueryObject
-     * @throws Exception
-     */
-    public static function browserPost($url, $data, $callback, $param1 = null, $param2 = null, $param3 = null)
-    {
-        if (self::plugin('WebBrowser')) {
-            $params = \func_get_args();
-
-            return self::callbackRun([self::$plugins, 'browserPost'], $params);
-        }
-        self::debug('WebBrowser plugin not available...');
-    }
-
-    /**
-     *
-     * @param $ajaxSettings
-     * @param $callback
-     * @param $param1
-     * @param $param2
-     * @param $param3
-     * @return phpQueryObject
-     * @throws Exception
-     */
-    public static function browser($ajaxSettings, $callback, $param1 = null, $param2 = null, $param3 = null)
-    {
-        if (self::plugin('WebBrowser')) {
-            $params = \func_get_args();
-
-            return self::callbackRun([self::$plugins, 'browser'], $params);
-        }
-        self::debug('WebBrowser plugin not available...');
-    }
-
-    /**
-     * @param $code
-     * @return string
-     */
-    public static function php($code)
+    public static function php($code): string
     {
         return self::code('php', $code);
     }
 
     /**
-     * @param $type
-     * @param $code
+     * @param string $type
+     * @param string $code
      * @return string
      */
-    public static function code($type, $code)
+    public static function code($type, $code): string
     {
         return "<$type><!-- " . \trim($code) . " --></$type>";
     }
 
     /**
-     * @param $method
-     * @param $params
+     * @param string $method
+     * @param array  $params
      * @return mixed
      */
     public static function __callStatic($method, $params)
@@ -1501,31 +975,28 @@ abstract class phpQuery
     }
 
     /**
-     * @param $node
-     * @param $documentID
+     * @param DOMElement|mixed $node
+     * @param string           $documentID
      * @return mixed
      */
     protected static function dataSetupNode($node, $documentID)
     {
-        // search are return if alredy exists
         foreach (self::$documents[$documentID]->dataNodes as $dataNode) {
             if ($node->isSameNode($dataNode)) {
                 return $dataNode;
             }
         }
-        // if doesn't, add it
         self::$documents[$documentID]->dataNodes[] = $node;
 
         return $node;
     }
 
     /**
-     * @param $node
-     * @param $documentID
+     * @param DOMElement $node
+     * @param string     $documentID
      */
-    protected static function dataRemoveNode($node, $documentID)
+    protected static function dataRemoveNode($node, $documentID): void
     {
-        // search are return if alredy exists
         foreach (self::$documents[$documentID]->dataNodes as $k => $dataNode) {
             if ($node->isSameNode($dataNode)) {
                 unset(
@@ -1537,21 +1008,17 @@ abstract class phpQuery
     }
 
     /**
-     * @param      $node
-     * @param      $name
-     * @param      $data
-     * @param null $documentID
+     * @param DOMElement  $node
+     * @param string      $name
+     * @param mixed|null  $data
+     * @param string|null $documentID
      * @return mixed
      */
     public static function data($node, $name, $data, $documentID = null)
     {
-        if (!$documentID) {
-            // TODO check if this works
-
-            $documentID = self::getDocumentID($node);
-        }
-        $document = self::$documents[$documentID];
-        $node     = self::dataSetupNode($node, $documentID);
+        $documentID = $documentID ?? self::getDocumentID($node);
+        $document   = self::$documents[$documentID];
+        $node       = self::dataSetupNode($node, $documentID);
         if (!isset($node->dataID)) {
             $node->dataID = ++self::$documents[$documentID]->uuid;
         }
@@ -1562,30 +1029,24 @@ abstract class phpQuery
         if ($data !== null) {
             $document->data[$id][$name] = $data;
         }
-        if ($name) {
-            if (isset($document->data[$id][$name])) {
-                return $document->data[$id][$name];
-            }
-        } else {
-            return $id;
+        if ($name && isset($document->data[$id][$name])) {
+            return $document->data[$id][$name];
         }
+
+        return $id;
     }
 
     /**
-     * @param $node
-     * @param $name
-     * @param $documentID
+     * @param DOMElement $node
+     * @param string     $name
+     * @param string     $documentID
      */
-    public static function removeData($node, $name, $documentID)
+    public static function removeData($node, $name, $documentID): void
     {
-        if (!$documentID) {
-            // TODO check if this works
-
-            $documentID = self::getDocumentID($node);
-        }
-        $document = self::$documents[$documentID];
-        $node     = self::dataSetupNode($node, $documentID);
-        $id       = $node->dataID;
+        $documentID = $documentID ?? self::getDocumentID($node);
+        $document   = self::$documents[$documentID];
+        $node       = self::dataSetupNode($node, $documentID);
+        $id         = $node->dataID;
         if ($name) {
             if (isset($document->data[$id][$name])) {
                 unset($document->data[$id][$name]);

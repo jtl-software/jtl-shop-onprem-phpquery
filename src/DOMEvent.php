@@ -88,12 +88,12 @@ class DOMEvent
     /**
      * Returns the time that the event was created.
      *
-     * @var
+     * @var string
      */
     public $timeStamp;
 
     /**
-     * Returns the name of the event (case-insensitive).
+     * @var string
      */
     public $type;
 
@@ -124,7 +124,7 @@ class DOMEvent
     /**
      * Cancels the event (if it is cancelable).
      */
-    public function preventDefault()
+    public function preventDefault(): void
     {
         $this->runDefault = false;
     }
@@ -132,7 +132,7 @@ class DOMEvent
     /**
      * Stops the propagation of events further along in the DOM.
      */
-    public function stopPropagation()
+    public function stopPropagation(): void
     {
         $this->bubbles = false;
     }
