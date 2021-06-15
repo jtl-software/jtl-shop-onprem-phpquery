@@ -375,7 +375,7 @@ abstract class phpQuery
     public static function _phpToMarkupCallback($m, $charset = 'utf-8'): string
     {
         return $m[1] . $m[2]
-            . \htmlspecialchars('<?php' . $m[4] . '?>', ENT_QUOTES | ENT_NOQUOTES, $charset)
+            . \htmlspecialchars('<?php' . $m[4] . '?>', \ENT_QUOTES | \ENT_NOQUOTES, $charset)
             . $m[5] . $m[2];
     }
 
@@ -519,7 +519,6 @@ abstract class phpQuery
         string $contentType = null,
         $documentID = null
     ): ?string {
-        $document = null;
         if (($html instanceof DOMDocument) && self::getDocumentID($html)) {
             // document already exists in phpQuery::$documents, make a copy
             $wrapper = clone $html;

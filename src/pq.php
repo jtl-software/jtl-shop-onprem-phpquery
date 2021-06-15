@@ -15,5 +15,5 @@ use JTL\phpQuery\phpQuery;
  */
 function pq($arg1, $context = null)
 {
-    return \call_user_func_array([phpQuery::class, 'pq'], \func_get_args());
+    return call_user_func_array([phpQuery::class, 'pq'], func_get_args());
 }

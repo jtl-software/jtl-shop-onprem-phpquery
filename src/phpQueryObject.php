@@ -6,7 +6,6 @@ use ArrayAccess;
 use Closure;
 use Countable;
 use DOMDocument;
-use JTL\phpQuery\DOMDocumentWrapper;
 use DOMElement;
 use DOMNode;
 use DOMText;
@@ -858,7 +857,6 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
                     $execute = false;
                     // attr with specifed value
                     if (mb_strpos($s, '=')) {
-                        $value          = null;
                         [$attr, $value] = \explode('=', $attr);
                         $value          = \trim($value, "'\"");
                         if ($this->isRegexp($attr)) {

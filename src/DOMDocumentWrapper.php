@@ -253,7 +253,7 @@ class DOMDocumentWrapper
         // HTTP 1.1 says that the default charset is ISO-8859-1
         // @see http://www.w3.org/International/O-HTTP-charset
         if (!$documentCharset) {
-            $documentCharset = JTL_CHARSET;
+            $documentCharset = \JTL_CHARSET;
         }
         // Should be careful here, still need 'magic encoding detection' since lots of pages have other 'default encoding'
         // Worse, some pages can have mixed encodings... we'll try not to worry about that
@@ -286,7 +286,7 @@ class DOMDocumentWrapper
             $this->documentCreate($charset);
             $return = phpQuery::$debug === 2
                 ? $this->document->loadHTML($markup)
-                : @$this->document->loadHTML($markup, LIBXML_NOWARNING | LIBXML_NONET | LIBXML_NOERROR);
+                : @$this->document->loadHTML($markup, \LIBXML_NOWARNING | \LIBXML_NONET | \LIBXML_NOERROR);
             if ($return) {
                 $this->root = $this->document;
             }
@@ -361,8 +361,8 @@ class DOMDocumentWrapper
             $this->documentCreate($charset);
             /** @link http://pl2.php.net/manual/en/libxml.constants.php */
             $libxmlStatic = phpQuery::$debug === 2
-                ? LIBXML_DTDLOAD | LIBXML_DTDATTR | LIBXML_NONET
-                : LIBXML_DTDLOAD | LIBXML_DTDATTR | LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR;
+                ? \LIBXML_DTDLOAD | \LIBXML_DTDATTR | \LIBXML_NONET
+                : \LIBXML_DTDLOAD | \LIBXML_DTDATTR | \LIBXML_NONET | \LIBXML_NOWARNING | \LIBXML_NOERROR;
             $return       = $this->document->loadXML($markup, $libxmlStatic);
             if ($return) {
                 $this->root = $this->document;
@@ -493,7 +493,7 @@ class DOMDocumentWrapper
             '@\s*<meta[^>]+http-equiv\\s*=\\s*(["|\'])Content-Type\\1([^>]+?)>@i',
             $markup,
             $matches,
-            PREG_OFFSET_CAPTURE
+            \PREG_OFFSET_CAPTURE
         );
         if (!isset($matches[0])) {
             return null;
@@ -784,10 +784,8 @@ class DOMDocumentWrapper
             return $markup;
         }
         if ($this->isDocumentFragment) {
-            $markup = $this->documentFragmentToMarkup($this);
-
             // no need for markupFixXHTML, as it's done thought markup($nodes) method
-            return $markup;
+            return $this->documentFragmentToMarkup($this);
         }
         $markup = $this->isXML
             ? $this->document->saveXML()
@@ -807,9 +805,8 @@ class DOMDocumentWrapper
     {
         $markup = self::expandEmptyTag('script', $markup);
         $markup = self::expandEmptyTag('select', $markup);
-        $markup = self::expandEmptyTag('textarea', $markup);
 
-        return $markup;
+        return self::expandEmptyTag('textarea', $markup);
     }
 
     /**

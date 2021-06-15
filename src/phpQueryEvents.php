@@ -185,7 +185,6 @@ abstract class phpQueryEvents
     protected static function issetGlobal($documentID, $type): bool
     {
         return isset(phpQuery::$documents[$documentID])
-            ? \in_array($type, phpQuery::$documents[$documentID]->eventsGlobal)
-            : false;
+            && \in_array($type, phpQuery::$documents[$documentID]->eventsGlobal);
     }
 }
