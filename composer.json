@@ -4,6 +4,7 @@
   "homepage": "https://www.jtl-software.de/",
   "keywords": ["jtl-shop"],
   "license": "MIT",
+  "version": "1.0.1",
   "authors": [
     {
       "name": "Felix Moche",
