@@ -598,10 +598,7 @@ abstract class phpQuery
         if (\class_exists('phpQueryPlugin_' . $class)) {
             $realClass = 'phpQueryPlugin_' . $class;
             $vars      = \get_class_vars($realClass);
-            $loop      = isset($vars['phpQueryMethods'])
-            && $vars['phpQueryMethods'] !== null
-                ? $vars['phpQueryMethods']
-                : \get_class_methods($realClass);
+            $loop      = $vars['phpQueryMethods'] ?? \get_class_methods($realClass);
             foreach ($loop as $method) {
                 if ($method === '__initialize') {
                     continue;
@@ -623,18 +620,17 @@ abstract class phpQuery
         if (\class_exists('phpQueryObjectPlugin_' . $class)) {
             $realClass = 'phpQueryObjectPlugin_' . $class;
             $vars      = \get_class_vars($realClass);
-            $loop      = isset($vars['phpQueryMethods'])
-            && $vars['phpQueryMethods'] !== null
-                ? $vars['phpQueryMethods']
-                : \get_class_methods($realClass);
+            $loop      = $vars['phpQueryMethods'] ?? \get_class_methods($realClass);
             foreach ($loop as $method) {
                 if (!\is_callable([$realClass, $method])) {
                     continue;
                 }
                 if (isset(self::$pluginsMethods[$method])) {
-                    throw new Exception("Duplicate method '{$method}' from plugin '{$class}' conflicts with same method from plugin '" .
-                        self::$pluginsMethods[$method] . "'");
-                    continue;
+                    throw new Exception('Duplicate method "' . $method
+                        . '" from plugin "' . $class
+                        .'"" conflicts with same method from plugin "'
+                        . self::$pluginsMethods[$method] . '"'
+                    );
                 }
                 self::$pluginsMethods[$method] = $class;
             }
@@ -698,7 +694,7 @@ abstract class phpQuery
      */
     public static function isMarkup($input): bool
     {
-        return !\is_array($input) && \strpos(\trim($input), '<') === 0;
+        return !\is_array($input) && \str_starts_with(\trim($input), '<');
     }
 
     /**

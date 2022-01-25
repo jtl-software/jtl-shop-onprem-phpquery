@@ -183,7 +183,7 @@ class DOMDocumentWrapper
                     break;
                 default:
                     // for feeds or anything that sometimes doesn't use text/xml
-                    if (\strpos('xml', $this->contentType) !== false) {
+                    if (\str_contains('xml', $this->contentType)) {
                         $loaded = $this->loadMarkupXML($markup, $charset);
                     } else {
                         phpQuery::debug("Could not determine document type from content type '{$this->contentType}'");
@@ -206,7 +206,9 @@ class DOMDocumentWrapper
      */
     protected function loadMarkupReset(): void
     {
-        $this->isXML = $this->isXHTML = $this->isHTML = false;
+        $this->isXML   = false;
+        $this->isXHTML = false;
+        $this->isHTML  = false;
     }
 
     /**
@@ -257,8 +259,8 @@ class DOMDocumentWrapper
         }
         // Should be careful here, still need 'magic encoding detection' since lots of pages have other 'default encoding'
         // Worse, some pages can have mixed encodings... we'll try not to worry about that
-        $requestedCharset = \strtoupper($requestedCharset);
-        $documentCharset  = \strtoupper($documentCharset);
+        $requestedCharset = \strtoupper($requestedCharset ?? '');
+        $documentCharset  = \strtoupper($documentCharset ?? '');
         if ($requestedCharset && $documentCharset && $requestedCharset !== $documentCharset) {
             // Document Encoding Conversion
             // http://code.google.com/p/phpquery/issues/detail?id=86
@@ -389,10 +391,10 @@ class DOMDocumentWrapper
     protected function isXHTML($markup = null): bool
     {
         if (!isset($markup)) {
-            return \strpos($this->contentType, 'xhtml') !== false;
+            return \str_contains($this->contentType, 'xhtml');
         }
 
-        return \strpos($markup, '<!DOCTYPE html') !== false;
+        return \str_contains($markup, '<!DOCTYPE html');
     }
 
     /**
@@ -401,7 +403,7 @@ class DOMDocumentWrapper
      */
     protected function isXML($markup): bool
     {
-        return \strpos(\substr($markup, 0, 100), '<' . '?xml') !== false;
+        return \str_contains(\substr($markup, 0, 100), '<' . '?xml');
     }
 
     /**
@@ -522,8 +524,8 @@ class DOMDocumentWrapper
             . $charset . '" '
             . ($xhtml ? '/' : '')
             . '>';
-        if (\strpos($html, '<head') === false) {
-            if (\strpos($html, '<html') === false) {
+        if (!\str_contains($html, '<head')) {
+            if (!\str_contains($html, '<html')) {
                 return $meta . $html;
             }
             return \preg_replace(
@@ -681,7 +683,7 @@ class DOMDocumentWrapper
         } else {
             $markup2 = phpQuery::$defaultDoctype . '<html><head><meta http-equiv="Content-Type" content="text/html;charset='
                 . $charset . '"></head>';
-            $noBody  = \strpos($markup, '<body') === false;
+            $noBody  = $markup === null || !\str_contains($markup, '<body');
             if ($noBody) {
                 $markup2 .= '<body>';
             }

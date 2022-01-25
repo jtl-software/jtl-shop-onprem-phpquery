@@ -828,9 +828,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
                 if ($isTag) {
                     if ($this->isXML()) {
                         // namespace support
-                        if (mb_strpos($s, '|') !== false) {
-                            $ns         = null;
-                            $tag        = null;
+                        if (\str_contains($s, '|')) {
                             [$ns, $tag] = \explode('|', $s);
                             $XQuery    .= "$ns:$tag";
                         } elseif ($s === '*') {
@@ -1158,7 +1156,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
                     break;
                 }
                 // nth-child(n+b) to nth-child(1n+b)
-                if (\strpos($param, 'n') === 0) {
+                if (\str_starts_with($param, 'n')) {
                     $param = '1' . $param;
                 }
                 // :nth-child(index/even/odd/equation)
@@ -1178,7 +1176,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
                         new CallbackParam(),
                         $param
                     );
-                } elseif (mb_strlen($param) > 1 && \strpos($param, 'n') !== false) {
+                } elseif (\mb_strlen($param) > 1 && \str_contains($param, 'n')) {
                     // an+b
                     $mapped = $this->map(
                         static function ($node, $param) {
@@ -1420,7 +1418,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
             $this->elements = $stack;
             // PER ALL NODES selector chunks
             foreach ($selector as $s) {// PSEUDO CLASSES
-                if (\strpos($s, ':') === 0) {
+                if (\str_starts_with($s, ':')) {
                     $this->pseudoClasses($s);
                 }
             }
@@ -2300,7 +2298,8 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
                 }
                 break;
             case 'object':
-                $insertFrom = $insertTo = [];
+                $insertFrom = [];
+                $insertTo   = [];
                 // phpQuery
                 if ($target instanceof self) {
                     if ($to) {
@@ -3293,6 +3292,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
     /**
      *
      */
+    #[\ReturnTypeWillChange]
     public function rewind(): void
     {
         $this->elementsBackup    = $this->elements;
@@ -3305,6 +3305,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
     /**
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->elementsInterator[$this->current];
@@ -3313,6 +3314,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
     /**
      * @return null
      */
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->current;
@@ -3330,6 +3332,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      * @return phpQueryObject|void
      * @see phpQueryObject::_next()
      */
+    #[\ReturnTypeWillChange]
     public function next($cssSelector = null)
     {
         $this->valid = isset($this->elementsInterator[$this->current + 1]);
@@ -3354,6 +3357,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      * @param mixed $offset
      * @return bool
      */
+    #[\ReturnTypeWillChange]
     public function offsetExists($offset): bool
     {
         return $this->find($offset)->size() > 0;
@@ -3363,6 +3367,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      * @param mixed $offset
      * @return phpQueryObject
      */
+    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         return $this->find($offset);
@@ -3373,6 +3378,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      * @param mixed $value
      * @throws Exception
      */
+    #[\ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
         $this->find($offset)->html($value);
@@ -3382,6 +3388,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      * @param mixed $offset
      * @throws Exception
      */
+    #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         throw new Exception("Can't do unset, use array interface only for calling queries and replacing HTML.");
@@ -3450,9 +3457,9 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
                         ? '.' . \implode('.', \explode(' ', $node->getAttribute('class'))) : '')
                     . ($node->getAttribute('name')
                         ? '[name="' . $node->getAttribute('name') . '"]' : '')
-                    . ($node->getAttribute('value') && \strpos($node->getAttribute('value'), '<' . '?php') === false
+                    . ($node->getAttribute('value') && !\str_contains($node->getAttribute('value'), '<' . '?php')
                         ? '[value="' . \substr(\str_replace("\n", '', $node->getAttribute('value')), 0, 15) . '"]' : '')
-                    . ($node->getAttribute('value') && \strpos($node->getAttribute('value'), '<' . '?php') !== false
+                    . ($node->getAttribute('value') && \str_contains($node->getAttribute('value'), '<' . '?php')
                         ? '[value=PHP]' : '')
                     . ($node->getAttribute('selected')
                         ? '[selected]' : '')
