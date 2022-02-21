@@ -1,6 +1,6 @@
 {
   "name": "jtlshop/phpquery",
-  "description": "PHP 7.4 ready phpQuery",
+  "description": "PHP 8 ready phpQuery",
   "homepage": "https://www.jtl-software.de/",
   "keywords": ["jtl-shop"],
   "license": "MIT",
@@ -13,7 +13,7 @@
     }
   ],
   "require": {
-    "php": ">=8.0"
+    "php": ">=7.4"
   },
   "autoload": {
     "files": ["src/pq.php"],
