@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 use JTL\phpQuery\phpQueryObject;
 use JTL\phpQuery\phpQuery;
@@ -7,8 +7,8 @@ use JTL\phpQuery\phpQuery;
  * Shortcut to phpQuery::pq($arg1, $context)
  *
  * @see phpQuery::pq()
- * @param mixed $arg1
- * @param mixed $context
+ * @param string|DOMNode|DOMNodeList|array   $arg1
+ * @param string|phpQueryObject|DOMNode|null $context
  * @return phpQueryObject
  * @author Tobiasz Cudnik <tobiasz.cudnik/gmail.com>
  * @package phpQuery

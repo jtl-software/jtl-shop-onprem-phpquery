@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace JTL\phpQuery;
 
@@ -19,14 +19,7 @@ class DOMEvent
      *
      * @var bool
      */
-    public $bubbles = true;
-
-    /**
-     * Returns a boolean indicating whether the event is cancelable.
-     *
-     * @var bool
-     */
-    public $cancelable = true;
+    public bool $bubbles = true;
 
     /**
      * Returns a reference to the currently registered target for the event.

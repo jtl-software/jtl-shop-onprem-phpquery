@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * phpQuery is a server-side, chainable, CSS3 selector driven
  * Document Object Model (DOM) API based on jQuery JavaScript Library.
@@ -30,14 +30,14 @@ use Iterator;
 abstract class phpQuery
 {
     /**
-     * @var bool
+     * @var bool|int
      */
     public static $debug = false;
 
     /**
-     * @var array
+     * @var DOMDocumentWrapper[]
      */
-    public static $documents = [];
+    public static array $documents = [];
 
     /**
      * @var null

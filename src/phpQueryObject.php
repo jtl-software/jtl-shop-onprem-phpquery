@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace JTL\phpQuery;
 
@@ -62,12 +62,12 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      * @TODO refactor to ->nodes
      * @var array
      */
-    public $elements = [];
+    public array $elements = [];
 
     /**
      * @var array
      */
-    protected $elementsBackup = [];
+    protected array $elementsBackup = [];
 
     /**
      * @var self|null
@@ -88,22 +88,22 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      *
      * @var bool
      */
-    public $documentFragment = true;
+    public bool $documentFragment = true;
 
     /**
-     * @var array
+     * @var array|null
      */
-    protected $elementsInterator = [];
+    protected ?array $elementsInterator = [];
 
     /**
      * @var bool
      */
-    protected $valid = false;
+    protected bool $valid = false;
 
     /**
      * @var int
      */
-    protected $current = 0;
+    protected int $current = 0;
 
     /**
      * phpQueryObject constructor.

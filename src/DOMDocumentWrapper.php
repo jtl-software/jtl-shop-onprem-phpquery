@@ -54,27 +54,22 @@ class DOMDocumentWrapper
     /**
      * @var array
      */
-    public $dataNodes = [];
+    public array $dataNodes = [];
 
     /**
      * @var array
      */
-    public $events = [];
+    public array $events = [];
 
     /**
      * @var array
      */
-    public $eventsNodes = [];
+    public array $eventsNodes = [];
 
     /**
      * @var array
      */
-    public $eventsGlobal = [];
-
-    /**
-     * @var array
-     */
-    public $frames = [];
+    public array $eventsGlobal = [];
 
     /**
      * Document root, by default equals to document itself.
@@ -85,24 +80,24 @@ class DOMDocumentWrapper
     public $root;
 
     /**
-     * @var bool
+     * @var bool|null
      */
     public $isDocumentFragment;
 
     /**
      * @var bool
      */
-    public $isXML = false;
+    public bool $isXML = false;
 
     /**
      * @var bool
      */
-    public $isXHTML = false;
+    public bool $isXHTML = false;
 
     /**
      * @var bool
      */
-    public $isHTML = false;
+    public bool $isHTML = false;
 
     /**
      * @var string
@@ -132,15 +127,7 @@ class DOMDocumentWrapper
     public function load(string $markup, string $contentType = null): bool
     {
         $this->contentType = \strtolower($contentType);
-        $loaded            = false;
-        if ($markup instanceof DOMDocument) {
-            $this->document = $markup;
-            $this->root     = $this->document;
-            $this->charset  = $this->document->encoding;
-            // TODO isDocumentFragment
-        } else {
-            $loaded = $this->loadMarkup($markup);
-        }
+        $loaded            = $this->loadMarkup($markup);
         if ($loaded) {
             $this->document->preserveWhiteSpace = true;
             $this->xpath                        = new DOMXPath($this->document);
