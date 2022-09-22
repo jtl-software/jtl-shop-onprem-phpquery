@@ -3305,6 +3305,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
     /**
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->elementsInterator[$this->current];
@@ -3313,6 +3314,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
     /**
      * @return null
      */
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->current;
@@ -3330,6 +3332,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      * @return phpQueryObject|void
      * @see phpQueryObject::_next()
      */
+    #[\ReturnTypeWillChange]
     public function next($cssSelector = null)
     {
         $this->valid = isset($this->elementsInterator[$this->current + 1]);
@@ -3354,6 +3357,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      * @param mixed $offset
      * @return bool
      */
+    #[\ReturnTypeWillChange]
     public function offsetExists($offset): bool
     {
         return $this->find($offset)->size() > 0;
@@ -3363,6 +3367,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      * @param mixed $offset
      * @return phpQueryObject
      */
+    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         return $this->find($offset);
@@ -3373,6 +3378,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      * @param mixed $value
      * @throws Exception
      */
+    #[\ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
         $this->find($offset)->html($value);
@@ -3382,6 +3388,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
      * @param mixed $offset
      * @throws Exception
      */
+    #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         throw new Exception("Can't do unset, use array interface only for calling queries and replacing HTML.");
