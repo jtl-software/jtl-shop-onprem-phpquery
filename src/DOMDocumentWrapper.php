@@ -287,8 +287,8 @@ class DOMDocumentWrapper
         } else {
             $this->documentCreate($charset);
             $return = phpQuery::$debug === 2
-                ? $this->document->loadHTML($markup)
-                : @$this->document->loadHTML($markup, \LIBXML_NOWARNING | \LIBXML_NONET | \LIBXML_NOERROR);
+                ? $this->document->loadHTML($markup, \LIBXML_SCHEMA_CREATE)
+                : @$this->document->loadHTML($markup, \LIBXML_SCHEMA_CREATE | \LIBXML_NOWARNING | \LIBXML_NONET | \LIBXML_NOERROR);
             if ($return) {
                 $this->root = $this->document;
             }
