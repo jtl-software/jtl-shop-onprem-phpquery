@@ -3297,8 +3297,7 @@ class phpQueryObject implements Iterator, Countable, ArrayAccess
     {
         $this->elementsBackup    = $this->elements;
         $this->elementsInterator = $this->elements;
-        $this->valid             = isset($this->elements[0])
-            ? 1 : 0;
+        $this->valid             = isset($this->elements[0]);
         $this->current           = 0;
     }
 
