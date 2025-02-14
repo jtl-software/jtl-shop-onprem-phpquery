@@ -516,7 +516,7 @@ abstract class phpQuery
      */
     protected static function createDocumentWrapper(
         string $html,
-        string $contentType = null,
+        ?string $contentType = null,
         $documentID = null
     ): ?string {
         if (($html instanceof DOMDocument) && self::getDocumentID($html)) {
