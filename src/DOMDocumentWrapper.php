@@ -110,7 +110,7 @@ class DOMDocumentWrapper
      * @param string|null $contentType
      * @param string|null $newDocumentID
      */
-    public function __construct(string $markup = null, string $contentType = null, string $newDocumentID = null)
+    public function __construct(?string $markup = null, ?string $contentType = null, ?string $newDocumentID = null)
     {
         if ($markup !== null) {
             $this->load($markup, $contentType);
@@ -124,7 +124,7 @@ class DOMDocumentWrapper
      * @return bool
      * @throws Exception
      */
-    public function load(string $markup, string $contentType = null): bool
+    public function load(string $markup, ?string $contentType = null): bool
     {
         $this->contentType = \strtolower($contentType);
         $loaded            = $this->loadMarkup($markup);
